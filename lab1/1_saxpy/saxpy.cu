@@ -67,16 +67,16 @@ void saxpyCuda(int N, float alpha, float* xarray, float* yarray, float* resultar
     float* device_result = nullptr;
 
     // TODO: allocate device memory buffers on the GPU using cudaMalloc.
-    cudaMalloc(&device_x, totalBytes);
-    cudaMalloc(&device_y, totalBytes);
-    cudaMalloc(&device_result, totalBytes);
+    cudaMalloc(&device_x, sizeof(float) * N);
+    cudaMalloc(&device_y, sizeof(float) * N);
+    cudaMalloc(&device_result, sizeof(float) * N);
         
     // start timing after allocation of device memory
     double startTime = CycleTimer::currentSeconds();
 
     // TODO: copy input arrays to the GPU using cudaMemcpy
-    cudaMemcpy(device_x, xarray, totalBytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_y, yarray, totalBytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_x, xarray, sizeof(float) * N, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_y, yarray, sizeof(float) * N, cudaMemcpyHostToDevice);
 
     // TODO: insert time here to begin timing only the kernel
     double startTime2 = CycleTimer::currentSeconds();
