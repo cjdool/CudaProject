@@ -68,6 +68,8 @@ __global__
 void matrixMul_shmem( float* C, float* A, float* B, int wA, int wB)
 {
 	// TODO: fill me
+    int Row = blockIdx.y*blockDim + threadIdx.y;
+    int Col = blockIdx.x*blockDim + threadIdx.x;
 }
 
 void randomInitialization(float *data, int size) {
