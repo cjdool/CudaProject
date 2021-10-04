@@ -75,7 +75,7 @@ void matrixMul_shmem( float* C, float* A, float* B, int wA, int wB)
     int Row = blockIdx.y*blockDim.y + threadIdx.y;
     int Col = blockIdx.x*blockDim.x + threadIdx.x;
 
-    if (Row < wA && col < wB){
+    if (Row < wA && Col < wB){
         float Pvalue = 0;
         for (int i = 0; i < wA/TILE_WIDTH; i++){
             ds_M[threadIdx.y][threadIdx.x] = A[Row*wA + i*TILE_WIDTH + threadIdx.x];
@@ -87,7 +87,7 @@ void matrixMul_shmem( float* C, float* A, float* B, int wA, int wB)
             }
             __syncthreads();
         }
-        C[Row*wB+Col] = Pvalue
+        C[Row*wB+Col] = Pvalue;
     }
 
     #undef TILE_WIDTH
