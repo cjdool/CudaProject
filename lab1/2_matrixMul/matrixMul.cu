@@ -68,7 +68,6 @@ __global__
 void matrixMul_shmem( float* C, float* A, float* B, int wA, int wB)
 {
 	// TODO: fill me
-  // checking area
 }
 
 void randomInitialization(float *data, int size) {
