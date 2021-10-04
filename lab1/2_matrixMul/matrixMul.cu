@@ -53,14 +53,14 @@ void computeRefMatrixMul(float *C, const float *A, const float *B, unsigned int 
 __global__ 
 void matrixMul_naive(float* C, float* A, float* B, int wA, int wB) {
 	// TODO: fill me
-    int Row = blockIdx.y*blockDim + threadIdx.y;
-    int Col = blockIdx.x*blockDim + threadIdx.x;
-    if (Row < wA && Col < wA){
+    int Row = blockIdx.y*blockDim.y + threadIdx.y;
+    int Col = blockIdx.x*blockDim.x + threadIdx.x;
+    if (Row < wA && Col < wB){
         float Pvalue = 0;
         for (int i = 0; i < wA; i++){
-            Pvalue += M[Row*wA+k]*N[k*wA+Col];
+            Pvalue += A[Row*wA+i]*B[i*wB+Col];
         }
-        C[Row*wA+Col] = Pvalue;
+        C[Row*wB+Col] = Pvalue;
     }
 }
 
@@ -68,8 +68,29 @@ __global__
 void matrixMul_shmem( float* C, float* A, float* B, int wA, int wB)
 {
 	// TODO: fill me
-    int Row = blockIdx.y*blockDim + threadIdx.y;
-    int Col = blockIdx.x*blockDim + threadIdx.x;
+    #define TILE_WIDTH 32
+    __shared__ float ds_M[TILE_WIDTH][TILE_WIDTH];
+    __shared__ float ds_N[TILE_WIDTH][TILE_WIDTH];
+
+    int Row = blockIdx.y*blockDim.y + threadIdx.y;
+    int Col = blockIdx.x*blockDim.x + threadIdx.x;
+
+    if (Row < wA && col < wB){
+        float Pvalue = 0;
+        for (int i = 0; i < wA/TILE_WIDTH; i++){
+            ds_M[threadIdx.y][threadIdx.x] = A[Row*wA + i*TILE_WIDTH + threadIdx.x];
+            ds_N[threadIdx.y][threadIdx.x] = B[(i*TILE_WIDTH + threadIdx.y)*wB + Col];
+            __syncthreads();
+
+            for (int j = 0; j < TILE_WIDTH; j++){
+                Pvalue += ds_M[threadIdx.y][j] * ds_N[j][threadIdx.x];
+            }
+            __syncthreads();
+        }
+        C[Row*wB+Col] = Pvalue
+    }
+
+    #undef TILE_WIDTH
 }
 
 void randomInitialization(float *data, int size) {
