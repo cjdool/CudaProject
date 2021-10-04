@@ -40,19 +40,28 @@ void computeRefMatrixMul(float *C, const float *A, const float *B, unsigned int 
 	for(unsigned int i=0; i<height_A; i++) {
 		for(unsigned int j=0; j<width_B; j++) {
 			double sum = 0;
-      for(unsigned int k=0; k<width_A; k++) {
+            for(unsigned int k=0; k<width_A; k++) {
 				double a = A[(i*width_A)+k];
 				double b = B[(k*width_B)+j];
 				sum += a*b;
-      }
-      C[(i*width_B)+j] = (float)sum;
-    }
+            }
+            C[(i*width_B)+j] = (float)sum;
+        }
 	}
 }
 
 __global__ 
 void matrixMul_naive(float* C, float* A, float* B, int wA, int wB) {
 	// TODO: fill me
+    int Row = blockIdx.y*blockDim + threadIdx.y;
+    int Col = blockIdx.x*blockDim + threadIdx.x;
+    if (Row < wA && Col < wA){
+        float Pvalue = 0;
+        for (int i = 0; i < wA; i++){
+            Pvalue += M[Row*wA+k]*N[k*wA+Col];
+        }
+        C[Row*wA+Col] = Pvalue;
+    }
 }
 
 __global__ 
@@ -65,36 +74,36 @@ void randomInitialization(float *data, int size) {
 	srand(time(NULL));
 	for(int i=0; i<size; i++) {
 		data[i] = rand()/(float)RAND_MAX;
-  }
+    }
 }
 
 bool compareArray(const float *reference, const float *data, const unsigned int len, const float epsilon) {
-  assert(epsilon >= 0);
-  float error = 0;
-  float ref = 0;
+    assert(epsilon >= 0);
+    float error = 0;
+    float ref = 0;
   
 	for(unsigned int i=0; i<len; i++) {
-    float diff = reference[i] - data[i];
-    error += diff * diff;
-    ref += reference[i] * reference[i];
-  }
-  float normRef = sqrtf(ref);
+        float diff = reference[i] - data[i];
+        error += diff * diff;
+        ref += reference[i] * reference[i];
+    }
+    float normRef = sqrtf(ref);
 
-  if (fabs(ref) < 1e-7) {
-#ifdef _DEBUG
+    if (fabs(ref) < 1e-7) {
+    #ifdef _DEBUG
 		std::cerr << "ERROR, reference l2-norm is 0\n";
-#endif
-      return false;
-  }
-  float normError = sqrtf(error);
-  error = normError / normRef;
-  bool result = error < epsilon;
-#ifdef _DEBUG
-  if (! result) {
-      std::cerr<<"ERROR, l2-norm error "<<error<<" is greater than epsilon "<<epsilon<<"\n";
-  }
-#endif
-  return result;
+    #endif
+        return false;
+    }
+    float normError = sqrtf(error);
+    error = normError / normRef;
+    bool result = error < epsilon;
+    #ifdef _DEBUG
+    if (! result) {
+        std::cerr<<"ERROR, l2-norm error "<<error<<" is greater than epsilon "<<epsilon<<"\n";
+    }
+    #endif
+    return result;
 }
 
 int matrixMul(int block_size, dim3 &dimA, dim3 &dimB)
@@ -129,13 +138,13 @@ int matrixMul(int block_size, dim3 &dimA, dim3 &dimB)
   // Allocate device memory for A, B, and C
   float *d_A, *d_B, *d_C;
   CheckCudaErrors(cudaMalloc((void **)&d_A, mem_size_A));
-	CheckCudaErrors(cudaMalloc((void **)&d_B, mem_size_B));
+  CheckCudaErrors(cudaMalloc((void **)&d_B, mem_size_B));
   CheckCudaErrors(cudaMalloc((void **)&d_C, mem_size_C));
 
   // copy host-side A and B to device
   CheckCudaErrors(cudaMemcpy(d_A, h_A, mem_size_A, cudaMemcpyHostToDevice));
-	CheckCudaErrors(cudaMemcpy(d_B, h_B, mem_size_B, cudaMemcpyHostToDevice));
-	CheckCudaErrors(cudaMemcpy(d_C, h_C, mem_size_B, cudaMemcpyHostToDevice));
+  CheckCudaErrors(cudaMemcpy(d_B, h_B, mem_size_B, cudaMemcpyHostToDevice));
+  CheckCudaErrors(cudaMemcpy(d_C, h_C, mem_size_B, cudaMemcpyHostToDevice));
 
   // Setup execution parameters
   dim3 threads(block_size, block_size);
@@ -206,8 +215,8 @@ int matrixMul(int block_size, dim3 &dimA, dim3 &dimB)
 
   // copy host-side A and B to device
   CheckCudaErrors(cudaMemcpy(d_A, h_A, mem_size_A, cudaMemcpyHostToDevice));
-	CheckCudaErrors(cudaMemcpy(d_B, h_B, mem_size_B, cudaMemcpyHostToDevice));
-	CheckCudaErrors(cudaMemcpy(d_C, h_C, mem_size_B, cudaMemcpyHostToDevice));
+  CheckCudaErrors(cudaMemcpy(d_B, h_B, mem_size_B, cudaMemcpyHostToDevice));
+  CheckCudaErrors(cudaMemcpy(d_C, h_C, mem_size_B, cudaMemcpyHostToDevice));
 
 	// For accurate performance measurements, perform a dummy kernel launch for warm-up
   matrixMul_shmem<<< grid, threads >>>(d_C, d_A, d_B, dimA.x, dimB.x);
@@ -260,8 +269,8 @@ int matrixMul(int block_size, dim3 &dimA, dim3 &dimB)
   free(h_C);
   CheckCudaErrors(cudaFree(d_A));
   CheckCudaErrors(cudaFree(d_B));
-	CheckCudaErrors(cudaFree(d_C));
-	//CheckCudaErrors(cudaFree(d_C));	// This should cause an error ...
+  CheckCudaErrors(cudaFree(d_C));
+  //CheckCudaErrors(cudaFree(d_C));	// This should cause an error ...
 
   if(correct) {
       return EXIT_SUCCESS;
@@ -276,21 +285,21 @@ int matrixMul(int block_size, dim3 &dimA, dim3 &dimB)
 int main(int argc, char **argv)
 {
 	printf("\n---------------------------------------------------\n");
-  printf("[Lab 1] Part 2: Matrix-Multiplication Using CUDA\n");
+    printf("[Lab 1] Part 2: Matrix-Multiplication Using CUDA\n");
 	printf("---------------------------------------------------\n");
 
 	// dimension of matrix A and B
-  dim3 dimA(10*BLOCK_SIZE, 10*BLOCK_SIZE, 1);
-  dim3 dimB(20*BLOCK_SIZE, 10*BLOCK_SIZE, 1);
+    dim3 dimA(10*BLOCK_SIZE, 10*BLOCK_SIZE, 1);
+    dim3 dimB(20*BLOCK_SIZE, 10*BLOCK_SIZE, 1);
 
 	// check if dimension of A & B match properly
-  if(dimA.x!=dimB.y) {
-	printf("Error: outer matrix dimensions must be equal. (%d != %d)\n", dimA.x, dimB.y);
-	exit(EXIT_FAILURE);
-  }
+    if(dimA.x!=dimB.y) {
+	    printf("Error: outer matrix dimensions must be equal. (%d != %d)\n", dimA.x, dimB.y);
+	    exit(EXIT_FAILURE);
+    }
 	// target matrix configuration
-  printf("\n- MatrixA(%d,%d), MatrixB(%d,%d)\n", dimA.x, dimA.y, dimB.x, dimB.y);
+    printf("\n- MatrixA(%d,%d), MatrixB(%d,%d)\n", dimA.x, dimA.y, dimB.x, dimB.y);
 
 	// do matrix multiplication
-  exit(matrixMul(BLOCK_SIZE, dimA, dimB));
+    exit(matrixMul(BLOCK_SIZE, dimA, dimB));
 }
