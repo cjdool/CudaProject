@@ -52,13 +52,65 @@ void computeRefMatrixMul(float *C, const float *A, const float *B, unsigned int 
 
 __global__ 
 void matrixMul_naive(float* C, float* A, float* B, int wA, int wB) {
-	// TODO: fill me
+	// wA == dimA.x, 320
+  // wB == dimB.x, 640 
+  
+  // Calculate the row index of the C element and A
+  int row = (blockIdx.y*blockDim.y)+threadIdx.y;
+
+  // Calculate the row index of the C element and B
+  int col = (blockIdx.x*blockDim.x)+threadIdx.x;
+
+  if ((row < wA) && (col < wB))
+  {
+    float cValue = 0;
+
+    // each thread computes one element of the block sub-matrix
+    for (int k = 0; k < wA; k++)
+    {
+      cValue += (A[row*wA+k] * B[k*wB + col]);
+    }
+    C[row*wB+col] = cValue;
+  }
 }
 
 __global__ 
 void matrixMul_shmem( float* C, float* A, float* B, int wA, int wB)
 {
-	// TODO: fill me
+  #define TILE_WIDTH 32
+  // wA == dimA.x, 320
+  // wB == dimB.x, 640 
+
+  __shared__ float ds_A[TILE_WIDTH][TILE_WIDTH];
+  __shared__ float ds_B[TILE_WIDTH][TILE_WIDTH];
+
+  int row = (blockIdx.y * blockDim.y) + threadIdx.y;
+  int col = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+  if ((row < wA) && (col < wB))
+  {
+    float cValue = 0;
+
+    // Loop over the A and B tiles required to compute the C element
+    for (int c = 0; c < (wA/TILE_WIDTH); c++)
+    {
+      // Collaborative loading of A and B tiles into shared memory
+      ds_A[threadIdx.y][threadIdx.x] = A[row*wA + c*TILE_WIDTH + threadIdx.x];
+      ds_B[threadIdx.y][threadIdx.x] = B[(c*TILE_WIDTH + threadIdx.y)*wB +col];
+      __syncthreads();
+
+      for (int i = 0; i < TILE_WIDTH; i++)
+      {
+        cValue += ds_A[threadIdx.y][i] * ds_B[i][threadIdx.x];
+      }
+
+      __syncthreads();
+    }
+
+    C[row*wB+col] = cValue;
+  }
+
+  #undef TILE_WIDTH
 }
 
 void randomInitialization(float *data, int size) {
