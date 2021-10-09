@@ -374,7 +374,6 @@ shadePixel(int circleIndex, float2 pixelCenter, float3 p, float4* imagePtr) {
     newColor.w = alpha + existingColor.w;
 
     // global memory write
-    __syncthreads();
     *imagePtr = newColor;
     __threadfence();
 
