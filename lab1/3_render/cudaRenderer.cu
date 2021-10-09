@@ -365,9 +365,8 @@ shadePixel(int circleIndex, float2 pixelCenter, float3 p, float4* imagePtr) {
 
     // BEGIN SHOULD-BE-ATOMIC REGION
     // global memory read
-
-    //float4 existingColor = *imagePtr;
-    float4 existingColor = atomicExch(imagePtr, *imagePtr);
+    float4 existingColor = *imagePtr;
+    __threadfence();
     float4 newColor;
     newColor.x = alpha * rgb.x + oneMinusAlpha * existingColor.x;
     newColor.y = alpha * rgb.y + oneMinusAlpha * existingColor.y;
@@ -375,9 +374,9 @@ shadePixel(int circleIndex, float2 pixelCenter, float3 p, float4* imagePtr) {
     newColor.w = alpha + existingColor.w;
 
     // global memory write
-    //*imagePtr = newColor;
-    existingColor = atomicExch(imagePtr, newColor);
-    __threadfence()
+    __syncthreads();
+    *imagePtr = newColor;
+    __threadfence();
 
     // END SHOULD-BE-ATOMIC REGION
 }
