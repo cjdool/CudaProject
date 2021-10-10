@@ -451,7 +451,7 @@ __global__ void kernelRenderPixels() {
         if (index1d >= numintersectcircle){
             inBlock[index1d] = 0;
         } else {
-            float3 tempp = *(float3*)(&cuConstRendererParams.position[intersecCircle[index1d] * 3]);
+            float3 tempp = *(float3*)(&cuConstRendererParams.position[intersecCircles[index1d] * 3]);
             float temprad = cuConstRendererParams.radius[intersecCircle[index1d]];
             inBlock[index1d] = static_cast<uint>(circleInBox(tempp.x, tempp.y, temprad, blockL, blockR, blockT, blockB));
         }
