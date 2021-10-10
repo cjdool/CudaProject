@@ -441,7 +441,7 @@ __global__ void kernelRenderPixels() {
         if (index1d == 0 && cumuloutput[0] == 1){
             intersectCircles[0] = circleidx;
         } else if (cumuloutput[index1d] == (cumuloutput[index1d-1]+1)){
-            intersectCircles[cumuloutput[index1d]-1] = circleidx;
+            intersectCircles[cumuloutput[index1d-1]] = circleidx;
         }
         uint numintersectcircle = cumuloutput[BLOCKSIZE-1];
         __syncthreads(); // wait for all threads
@@ -451,7 +451,9 @@ __global__ void kernelRenderPixels() {
         if (index1d >= numintersectcircle){
             inBlock[index1d] = 0;
         } else {
-            inBlock[index1d] = static_cast<uint>(circleInBox(p.x, p.y, rad, blockL, blockR, blockT, blockB));
+            float3 tempp = *(float3*)(&cuConstRendererParams.position[intersecCircle[index1d] * 3]);
+            float temprad = cuConstRendererParams.radius[intersecCircle[index1d]];
+            inBlock[index1d] = static_cast<uint>(circleInBox(tempp.x, tempp.y, temprad, blockL, blockR, blockT, blockB));
         }
         __syncthreads(); // wait for all threads
 
