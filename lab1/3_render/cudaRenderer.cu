@@ -403,8 +403,8 @@ __global__ void kernelRenderPixels() {
     float invHeight = 1.f / imageHeight;
 
     __shared__ uint inBlock[BLOCKSIZE]; // flag value for checking whether circle intersect the block
-    __shared__ uint cumuloutput[BLOCKSIZE]; // exclusive scan(prefixsum) output
-    __shared__ uint scratchpad[2*BLOCKSIZE]; // shared memory for exclusive scan
+    __shared__ uint cumuloutput[BLOCKSIZE]; // inclusive scan(prefixsum) output
+    __shared__ uint scratchpad[2*BLOCKSIZE]; // shared memory for inclusive scan
     __shared__ uint intersectCircles[BLOCKSIZE]; // store circle index of intersecting circles
     float4* imgPtr;
     float4 colordata; // copied data
@@ -432,8 +432,8 @@ __global__ void kernelRenderPixels() {
         }
         __syncthreads(); // wait for all threads
 
-        // exclusive scan
-        sharedMemExclusiveScan(index1d, inBlock, cumuloutput, scratchpad, BLOCKSIZE);
+        // inclusive scan
+        sharedMemInclusiveScan(index1d, inBlock, cumuloutput, scratchpad, BLOCKSIZE);
         // ex) [1, 0, 1, 1, 1, 0] => [1, 1, 2, 3, 4, 4]
         __syncthreads(); // wait for all threads
 
@@ -455,8 +455,8 @@ __global__ void kernelRenderPixels() {
         }
         __syncthreads(); // wait for all threads
 
-        // exclusive scan
-        sharedMemExclusiveScan(index1d, inBlock, cumuloutput, scratchpad, BLOCKSIZE);
+        // inclusive scan
+        sharedMemInclusiveScan(index1d, inBlock, cumuloutput, scratchpad, BLOCKSIZE);
         __syncthreads(); // wait for all threads
 
         // store for intersecting circle index, re-use inBlock share memory for result
