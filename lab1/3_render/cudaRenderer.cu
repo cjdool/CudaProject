@@ -418,7 +418,7 @@ __global__ void kernelRenderPixels() {
     }
 
     // find out circle which contribute to this pixel && calculate new pixel data per block
-    for(int blockcircleindex = 0; blockcircleindex < cuConstRendererParams.numCircles; blockcicleindex += BLOCKSIZE){
+    for(int blockcircleindex = 0; blockcircleindex < cuConstRendererParams.numCircles; blockcircleindex += BLOCKSIZE){
         int circleidx = index1d + blockcircleindex;
         float3 p = *(float3*)(&cuConstRendererParams.position[circleidx * 3]);
         float rad = cuConstRendererParams.radius[circleidx];
