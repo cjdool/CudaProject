@@ -428,7 +428,7 @@ __global__ void kernelRenderPixels() {
         if (circleidx >= cuConstRendererParams.numCircles){
             inBlock[index1d] = 0;
         }else{
-            inBlock[index1d] = static_cast<uint>(circleInBoxConservative(p.x, p.y, rad, blockL, blockR, blockT, blockB));
+            inBlock[index1d] = static_cast<uint>(circleInBoxConservative(p.x, p.y, rad, blockL, blockR, blockB, blockT));
         }
         __syncthreads(); // wait for all threads
 
@@ -453,7 +453,7 @@ __global__ void kernelRenderPixels() {
         } else {
             float3 tempp = *(float3*)(&cuConstRendererParams.position[intersectCircles[index1d] * 3]);
             float temprad = cuConstRendererParams.radius[intersectCircles[index1d]];
-            inBlock[index1d] = static_cast<uint>(circleInBox(tempp.x, tempp.y, temprad, blockL, blockR, blockT, blockB));
+            inBlock[index1d] = static_cast<uint>(circleInBox(tempp.x, tempp.y, temprad, blockL, blockR, blockB, blockT));
         }
         __syncthreads(); // wait for all threads
 
