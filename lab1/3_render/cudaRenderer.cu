@@ -425,7 +425,7 @@ __global__ void kernelRenderPixels() {
 
         // find out a circle which intersect block using circleBoxTest.cu_inl
         // result is stored in shared memory, therefore all threads in block can share it
-        if (circleidx >= cuConstRendererParams.numCircle){
+        if (circleidx >= cuConstRendererParams.numCircles){
             inBlock[index1d] = 0;
         }else{
             inBlock[index1d] = static_cast<uint>(circleInBoxConservative(p.x, p.y, rad, blockL, blockR, blockT, blockB));
@@ -471,8 +471,8 @@ __global__ void kernelRenderPixels() {
         // calculate pixel using definitive circles
         if (pixelX < imageWidth && pixelY < imageHeight){
             for (int i = 0; i < numdefcircle; i++){
-                float3 circleposition = *(float3*)(&cuConstRendererParams.position[inBlock[i] * 3])
-                shadePixel(inBlock[i], pixelCenterNorm, circleposition, &colordata)
+                float3 circleposition = *(float3*)(&cuConstRendererParams.position[inBlock[i] * 3]);
+                shadePixel(inBlock[i], pixelCenterNorm, circleposition, &colordata);
             }
         }
         __syncthreads(); // wait for all threads
