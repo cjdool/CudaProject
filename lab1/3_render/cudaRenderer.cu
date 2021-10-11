@@ -488,18 +488,16 @@ __global__ void kernelRenderPixels() {
 
 __global__ void kernelRenderOneCircle(short screenMinX, short screenMaxX, short screenMinY, short screenMaxY, float invHeight, float invWidth, int circleIndex) {
 
-    int index1d = blockIdx.x * blockDim.x + threadIdx.x;
-    int totalPixelsNeeded = (screenMaxX - screenMinX) * (screenMaxY - screenMinY);
+    int index1d = blockIdx.x * blockDim.x + threadIdx.x; // index in thread-block for 1d array
+    int totalPixels = (screenMaxX - screenMinX) * (screenMaxY - screenMinY);
 
-    if (index1d > totalPixelsNeeded)
+    // check for boundary
+    if (index1d > totalPixels)
         return;
 
-    // x_dimensions
-    int xDim = screenMaxX - screenMinX;
-
     // calculate pixel x and pixel y
-    int pixelX = index1d % xDim + screenMinX;
-    int pixelY = index1d / xDim + screenMinY;
+    int pixelX = index1d % (screenMaxX - screenMinX) + screenMinX;
+    int pixelY = index1d / (screenMaxX - screenMinX) + screenMinY;
     short imageWidth = cuConstRendererParams.imageWidth;
 
     float4* imgPtr = (float4*)(&cuConstRendererParams.imageData[4 * (pixelY * imageWidth + pixelX)]);
@@ -726,11 +724,11 @@ CudaRenderer::render() {
 
     if (numCircles >= 5){
         kernelRenderPixels<<<gridDim, blockDim>>>();
-    }else{
-        int imageWidth = image->width;
-        int imageHeight = image->height;
+    }else{ // if there are too little circles, just thread for circle is better
         float invWidth = 1.f / image->width;
         float invHeight = 1.f / image->height;
+        int num_blocks; // number of blocks in grid
+        const int num_threads_per_block = 64; // 64 threads per block
 
         for (int circleIndex = 0; circleIndex < numCircles; circleIndex++){
             int index3 = 3 * circleIndex;
@@ -738,21 +736,19 @@ CudaRenderer::render() {
             float py = position[index3+1];
             float rad = radius[circleIndex];
 
-            int minX = static_cast<int>(imageWidth * (px - rad));
-            int maxX = static_cast<int>(imageWidth * (px + rad)) + 1;
-            int minY = static_cast<int>(imageHeight * (py - rad));
-            int maxY = static_cast<int>(imageHeight * (py + rad)) + 1;
+            int minX = static_cast<int>(image->width * (px - rad));
+            int maxX = static_cast<int>(image->width * (px + rad)) + 1;
+            int minY = static_cast<int>(image->height * (py - rad));
+            int maxY = static_cast<int>(image->height * (py + rad)) + 1;
 
-            int screenMinX = (minX > 0) ? ((minX < imageWidth) ? minX : imageWidth) : 0;
-            int screenMaxX = (maxX > 0) ? ((maxX < imageWidth) ? maxX : imageWidth) : 0;
-            int screenMinY = (minY > 0) ? ((minY < imageHeight) ? minY : imageHeight) : 0;
-            int screenMaxY = (maxY > 0) ? ((maxY < imageHeight) ? maxY : imageHeight) : 0;
+            int screenMinX = (minX > 0) ? ((minX < image->width) ? minX : image->width) : 0;
+            int screenMaxX = (maxX > 0) ? ((maxX < image->width) ? maxX : image->width) : 0;
+            int screenMinY = (minY > 0) ? ((minY < image->height) ? minY : image->height) : 0;
+            int screenMaxY = (maxY > 0) ? ((maxY < image->height) ? maxY : image->height) : 0;
 
-            int totalPixelNeeded = (screenMaxX - screenMinX) * (screenMaxY - screenMinY);
-            const int THREADS_PER_BLOCK = 64;
-            int num_blocks = (totalPixelNeeded + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+            num_blocks = ((screenMaxX - screenMinX) * (screenMaxY - screenMinY) + num_threads_per_block - 1) / num_threads_per_block;
 
-            kernelRenderOneCircle<<<num_blocks, THREADS_PER_BLOCK>>>(screenMinX, screenMaxX, screenMinY, screenMaxY, invHeight, invWidth, circleIndex);
+            kernelRenderOneCircle<<<num_blocks, num_threads_per_block>>>(screenMinX, screenMaxX, screenMinY, screenMaxY, invHeight, invWidth, circleIndex);
 
             cudaDeviceSynchronize();
         }
