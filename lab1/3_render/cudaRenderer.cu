@@ -486,7 +486,7 @@ __global__ void kernelRenderPixels() {
     }
 }
 
-__global__ void kernelRenderOneCircle(short screenMinX, short screenMaxX, short screenMinY, short screenMaxY, float invHeight, float invWidth, int circleIndex) {
+__global__ void kernelRenderCircle(short screenMinX, short screenMaxX, short screenMinY, short screenMaxY, float invHeight, float invWidth, int circleIndex) {
 
     int index1d = blockIdx.x * blockDim.x + threadIdx.x; // index in thread-block for 1d array
     int totalPixels = (screenMaxX - screenMinX) * (screenMaxY - screenMinY);
@@ -748,7 +748,7 @@ CudaRenderer::render() {
 
             num_blocks = ((screenMaxX - screenMinX) * (screenMaxY - screenMinY) + num_threads_per_block - 1) / num_threads_per_block;
 
-            kernelRenderOneCircle<<<num_blocks, num_threads_per_block>>>(screenMinX, screenMaxX, screenMinY, screenMaxY, invHeight, invWidth, circleIndex);
+            kernelRenderCircle<<<num_blocks, num_threads_per_block>>>(screenMinX, screenMaxX, screenMinY, screenMaxY, invHeight, invWidth, circleIndex);
 
             cudaDeviceSynchronize();
         }
