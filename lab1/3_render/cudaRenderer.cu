@@ -486,7 +486,7 @@ __global__ void kernelRenderPixels() {
     }
 }
 
-__global__ void kernelRenderOneCircle(short screenMinX, short screenMaxX, short screenMinY, short screenMaxY, float invHeight, float invWidth, int circleIdx) {
+__global__ void kernelRenderOneCircle(short screenMinX, short screenMaxX, short screenMinY, short screenMaxY, float invHeight, float invWidth, int circleIndex) {
 
     int index1d = blockIdx.x * blockDim.x + threadIdx.x;
     int totalPixelsNeeded = (screenMaxX - screenMinX) * (screenMaxY - screenMinY);
@@ -506,7 +506,8 @@ __global__ void kernelRenderOneCircle(short screenMinX, short screenMaxX, short 
     // for all pixels in the bonding box
     float2 pixelCenterNorm = make_float2(invWidth * (static_cast<float>(pixelX) + 0.5f),
                                          invHeight * (static_cast<float>(pixelY) + 0.5f));
-    myShadePixel(circleIdx, pixelCenterNorm, imgPtr);
+    float3 p = *(float3*)(&cuConstRendererParams.position[circleIndex * 3]);
+    ShadePixel(circleIndex, pixelCenterNorm, p, imgPtr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -735,7 +736,7 @@ CudaRenderer::render() {
             int index3 = 3 * circleIndex;
             float px = position[index3];
             float py = position[index3+1];
-            float rad = radius[i];
+            float rad = radius[circleIndex];
 
             int minX = static_cast<int>(imageWidth * (px - rad));
             int maxX = static_cast<int>(imageWidth * (px + rad));
@@ -751,7 +752,7 @@ CudaRenderer::render() {
             const int THREADS_PER_BLOCK = 64;
             int num_blocks = (totalPixelNeeded + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
-            kernelRenderOneCircle<<<num_blocks, THREADS_PER_BLOCK>>>(screenMinX, screenMaxX, screenMinY, screenMaxY, invHeight, invWidth, i);
+            kernelRenderOneCircle<<<num_blocks, THREADS_PER_BLOCK>>>(screenMinX, screenMaxX, screenMinY, screenMaxY, invHeight, invWidth, circleIndex);
 
             cudaDeviceSynchronize();
         }
