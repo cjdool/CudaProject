@@ -739,9 +739,9 @@ CudaRenderer::render() {
             float rad = radius[circleIndex];
 
             int minX = static_cast<int>(imageWidth * (px - rad));
-            int maxX = static_cast<int>(imageWidth * (px + rad));
+            int maxX = static_cast<int>(imageWidth * (px + rad)) + 1;
             int minY = static_cast<int>(imageHeight * (py - rad));
-            int maxY = static_cast<int>(imageHeight * (py + rad));
+            int maxY = static_cast<int>(imageHeight * (py + rad)) + 1;
 
             int screenMinX = (minX > 0) ? ((minX < imageWidth) ? minX : imageWidth) : 0;
             int screenMaxX = (maxX > 0) ? ((maxX < imageWidth) ? maxX : imageWidth) : 0;
