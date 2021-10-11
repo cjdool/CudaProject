@@ -14,6 +14,13 @@
 #include "sceneLoader.h"
 #include "util.h"
 
+#define BLOCKDIM 32
+#define BLOCKSIZE (BLOCKDIM * BLOCKDIM)
+#define SCAN_BLOCK_DIM BLOCKSIZE
+
+#include "circleBoxTest.cu_inl"
+#include "exclusiveScan.cu_inl"
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // Putting all the cuda kernels here
 ///////////////////////////////////////////////////////////////////////////////////////
