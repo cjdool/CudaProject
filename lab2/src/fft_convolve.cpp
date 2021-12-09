@@ -413,8 +413,7 @@ int large_gauss_test(int argc, char **argv){
         */
 
         cufftHandle plan;
-        int batch = 1;
-        cufftPlan1d(&plan, padded_length, CUFFT_C2C, batch);
+        cufftPlan1d(&plan, padded_length, CUFFT_C2C, 1);
 
         /* TODO: Run the forward DFT on the input signal and the impulse response. 
         (Do these in-place.) */
