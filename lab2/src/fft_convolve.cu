@@ -50,6 +50,14 @@ cudaProdScaleKernel(const cufftComplex *raw_data, const cufftComplex *impulse_v,
     resilient to varying numbers of threads.
 
     */
+
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    while (i < padded_length){
+        out_data[i].x = (raw_data[i].x * impulse_v[i].x - raw_data[i].y * impulse_v[i].y) / padded_length;
+        out_data[i].y = (raw_data[i].x * impulse_v[i].y + raw_data[i].y * impulse_v[i].x) / padded_length;
+        i += blockDim.x * gridDim.x;
+    }
 }
 
 __global__
@@ -93,6 +101,11 @@ cudaDivideKernel(cufftComplex *out_data, float *max_abs_val,
     This kernel should be quite short.
     */
 
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    while(i < padded_length){
+        out_data[i].x /= max_abs_val[0];
+        i += blockDim.x * gridDim.x;
+    }
 }
 
 
@@ -104,6 +117,7 @@ void cudaCallProdScaleKernel(const unsigned int blocks,
         const unsigned int padded_length) {
         
     /* TODO: Call the element-wise product and scaling kernel. */
+    cudaProdScaleKernel<<<blocks, threadsPerBlock>>>(raw_data, impluse_v, out_data, padded_length);
 }
 
 void cudaCallMaximumKernel(const unsigned int blocks,
@@ -125,4 +139,5 @@ void cudaCallDivideKernel(const unsigned int blocks,
         const unsigned int padded_length) {
         
     /* TODO 2: Call the division kernel. */
+    cudaDivideKernel<<<blocks, threadsPerBlock>>>(out_data, max_abs_val, padded_length);
 }
