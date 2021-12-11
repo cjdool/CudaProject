@@ -419,7 +419,7 @@ int large_gauss_test(int argc, char **argv){
         (Do these in-place.) */
 
         cufftExecC2C(plan, dev_input_data, dev_input_data, CUFFT_FORWARD);
-        cufftExecC2c(plan, dev_impulse_v, dev_impulse_v, CUFFT_FORWARD);
+        cufftExecC2C(plan, dev_impulse_v, dev_impulse_v, CUFFT_FORWARD);
 
         /* NOTE: This is a function in the fft_convolve_cuda.cu file,
         where you'll fill in the kernel call for point-wise multiplication
