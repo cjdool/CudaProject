@@ -103,7 +103,6 @@ cudaMaximumKernel(cufftComplex *out_data, float *max_abs_val,
     extern __shared__ float sdata[];
 
     unsigned int tid = threadIdx.x;
-    unsigned int index = blockIdx.x *2* (blockDim.x) + tid; 
     unsigned int gridSize = blockSize*2*gridDim.x;
 
     // Initialize shared mem to 0
@@ -111,9 +110,10 @@ cudaMaximumKernel(cufftComplex *out_data, float *max_abs_val,
 
     // Perform two loads and the first step of the reduction as many times
     // as needed. Optimization 1.
-    while (index+blockDim.x < padded_length) { 
+    // Step by gridSize each time to maintain coalescing
+    for (int index = blockIdx.x *2* (blockDim.x) + tid; index+blockDim.x < padded_length; index += gridSize){
         sdata[tid] = max(sdata[tid],max(abs(out_data[index].x), abs(out_data[index+blockDim.x].x)));
-        iindex += gridSize; // Step by gridSize each time to maintain coalescing
+        iindex += gridSize; 
     }    
     __syncthreads(); // Sync threads are loading in to shared memory
 
