@@ -29,7 +29,6 @@ __device__ static float atomicMax(float* address, float val)
 }
 
 /*
-Warp reduction function which performs max reduction for a warp.
 Instructions within a warp are synchronous so don't need to call
 __syncthreads()
 For loop for reduction has been unrolled.
@@ -88,17 +87,6 @@ cudaMaximumKernel(cufftComplex *out_data, float *max_abs_val,
     including why you chose the optimizations you did
     (especially as they relate to GPU hardware).
 
-    You'll likely find the above atomicMax function helpful.
-    (CUDA's atomicMax function doesn't work for floating-point values.)
-    It's based on two principles:
-        1) Any atomic function can be implemented using
-        atomic compare-and-swap.
-        2) One can "represent" floating-point values as integers in
-        a way that preserves comparison, if the sign of the two
-        values is the same. (see http://stackoverflow.com/questions/
-        29596797/can-the-return-value-of-float-as-int-be-used-to-
-        compare-float-in-cuda)
-
     */
 
     extern __shared__ float sdata[];
@@ -109,22 +97,22 @@ cudaMaximumKernel(cufftComplex *out_data, float *max_abs_val,
     // Initialize shared mem to 0
     sdata[tid] = 0;
 
-    // Perform two loads and the first step of the reduction as many times
-    // as needed. Optimization 1.
+    // Perform two loads and the first step of the reduction as many times as needed.
     // Step by gridSize each time to maintain coalescing
     for (unsigned int index = blockIdx.x *2* (blockDim.x) + tid; index+blockDim.x < padded_length; index += gridSize){
         sdata[tid] = max(sdata[tid],max(abs(out_data[index].x), abs(out_data[index+blockDim.x].x)));
     }    
     __syncthreads(); // Sync threads are loading in to shared memory
 
-    // Unroll for loop for all possible cases of block size. Optimization 4.
+    // Unroll for loop for all possible cases of block size.
     // Sync threads after step of the reduction.
-    // Use sequential addressing to avoid memory bank conflicts. Optimization 2.
+    // Use sequential addressing to avoid memory bank conflicts.
     if (blockSize >= 512) {if (tid < 256) { sdata[tid] = max(sdata[tid], sdata[tid+256]);} __syncthreads(); } 
     if (blockSize >= 256) {if (tid < 128) { sdata[tid] = max(sdata[tid], sdata[tid+128]);} __syncthreads(); } 
     if (blockSize >= 128) {if (tid < 64) { sdata[tid] = max(sdata[tid], sdata[tid+64]);} __syncthreads(); } 
 
     // We're down to a single warp and no longer need to syncthreads
+    // instrunctions within a warp are synchronous
     // Reduce for a single warp
     if (tid < 32) warpReduce<blockSize>(sdata, tid);
 
@@ -168,12 +156,11 @@ void cudaCallMaximumKernel(const unsigned int blocks,
         const unsigned int padded_length) {
         
 
-    /* TODO 2: Call the max-finding kernel. *
+    /* TODO 2: Call the max-finding kernel. */
 
-    /* Call the max-finding kernel. */
     // We need to specify the correct blockSize for the kernel call
-    // since it's a template parameter but it needs to be a constant. 
-    // There are 10 cases of block size so we can call the kernel with
+    // blockSize are in powers of 2 and limited to 512 threads.
+    // There are 10 possible cases of block size so we can call the kernel with
     // the correct blockSize constant for each case
     switch (threadsPerBlock) {
         case 512: cudaMaximumKernel<512><<<blocks, threadsPerBlock, threadsPerBlock*sizeof(float)>>>(out_data, max_abs_val, padded_length); break;
